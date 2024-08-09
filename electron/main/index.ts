@@ -7,6 +7,7 @@ import {initProxyApi} from "../api/proxy";
 import {initFrpcApi, startFrpWorkerProcess, stopFrpcProcess} from "../api/frpc";
 import {initLoggerApi} from "../api/logger";
 import {initFileApi} from "../api/file";
+import {initUpdaterApi} from "../api/update";
 import {getConfig} from "../storage/config";
 import log from "electron-log";
 // The built directory structure
@@ -117,7 +118,7 @@ async function createWindow() {
 }
 
 export const createTray = () => {
-    log.info(`当前环境 platform：${process.platform} arch：${process.arch} appData：${app.getPath("userData")}`)
+    log.info(`当前环境 platform：${process.platform} arch：${process.arch} appData：${app.getPath("userData")} version:${app.getVersion()}`)
     let menu: Array<(MenuItemConstructorOptions) | (MenuItem)> = [
         {
             label: '显示主窗口', click: function () {
@@ -160,25 +161,16 @@ export const createTray = () => {
 }
 
 app.whenReady().then(() => {
-    initGitHubApi();
-    initConfigApi();
-    initProxyApi();
-    initFrpcApi();
-    initLoggerApi();
-    initFileApi();
-    // initUpdaterApi();
-
-
-    //更新测试打开
-    Object.defineProperty(app, 'isPackaged', {
-        get() {
-            return true;
-        }
-    });
-
-
     createWindow().then(r => {
         createTray()
+        // 初始化各个API
+        initGitHubApi();
+        initConfigApi();
+        initProxyApi();
+        initFrpcApi();
+        initLoggerApi();
+        initFileApi();
+        // initUpdaterApi(win);
     })
 });
 
