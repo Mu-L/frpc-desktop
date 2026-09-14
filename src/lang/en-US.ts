@@ -394,6 +394,9 @@ export default {
         otherConfig: "Other Proxy Configuration",
         modifyDialog: "Modify Proxy"
       },
+      pluginType: {
+        none: "No plugin"
+      },
       button: {
         localPort: "Local Port",
         generateName: "Generate"
@@ -485,6 +488,19 @@ export default {
           label: "Key File",
           requireMessage: "Please select key file",
           placeholder: "Click to select key file"
+        },
+        tls2rawCaFile: {
+          label: "Certificate File",
+          requireMessage: "Please select certificate file",
+          placeholder: "Click to select certificate file"
+        },
+        tls2rawKeyFile: {
+          label: "Key File",
+          requireMessage: "Please select key file",
+          placeholder: "Click to select key file"
+        },
+        pluginType: {
+          label: "Plugin Type"
         },
         serverName: {
           label: "Provider Proxy Name",

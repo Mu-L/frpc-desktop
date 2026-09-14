@@ -414,6 +414,9 @@ export default {
         pluginConfig: "插件配置",
         otherConfig: "其他代理配置"
       },
+      pluginType: {
+        none: "无插件"
+      },
       button: {
         localPort: "本机端口",
         generateName: "生成"
@@ -508,6 +511,19 @@ export default {
           label: "密钥文件",
           requireMessage: "请选择密钥文件",
           placeholder: "点击选择密钥文件"
+        },
+        tls2rawCaFile: {
+          label: "证书文件",
+          requireMessage: "请选择证书文件",
+          placeholder: "点击选择证书文件"
+        },
+        tls2rawKeyFile: {
+          label: "密钥文件",
+          requireMessage: "请选择密钥文件",
+          placeholder: "点击选择密钥文件"
+        },
+        pluginType: {
+          label: "插件类型"
         },
         serverName: {
           label: "提供者代理名称",
