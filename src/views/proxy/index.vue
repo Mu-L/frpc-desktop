@@ -108,6 +108,9 @@ const defaultForm: FrpcProxy = {
   https2http: false,
   https2httpCaFile: "",
   https2httpKeyFile: "",
+  tls2raw: false,
+  tls2rawCaFile: "",
+  tls2rawKeyFile: "",
   keepTunnelOpen: false,
   status: 1,
   transport: {
@@ -121,7 +124,6 @@ const editForm = ref<FrpcProxy>(_.cloneDeep(defaultForm));
 
 const proxyTypes = ref(["http", "https", "tcp", "udp", "stcp", "xtcp", "sudp"]);
 const currSelectLocalFileType = ref();
-const hasPlugin = ref(false);
 
 const visitorsModels = ref([
   {
@@ -285,6 +287,20 @@ const isHttp = computed(() => {
 
 const isHttps = computed(() => {
   return editForm.value.type === "https";
+});
+
+// https 代理的插件类型：none（SNI 透传）/ https2http（终结 TLS→HTTP）/
+// tls2raw（终结 TLS→原始字节，支持 WebSocket 透传）
+const httpsPluginType = computed({
+  get: () => {
+    if (editForm.value.tls2raw) return "tls2raw";
+    if (editForm.value.https2http) return "https2http";
+    return "none";
+  },
+  set: (value: string) => {
+    editForm.value.https2http = value === "https2http";
+    editForm.value.tls2raw = value === "tls2raw";
+  }
 });
 
 const isStcp = computed(() => {
@@ -677,6 +693,12 @@ onMounted(() => {
           case 2:
             editForm.value.https2httpKeyFile = data.path as string;
             break;
+          case 3:
+            editForm.value.tls2rawCaFile = data.path as string;
+            break;
+          case 4:
+            editForm.value.tls2rawKeyFile = data.path as string;
+            break;
         }
       }
     })
@@ -749,11 +771,8 @@ onActivated(() => {
 });
 
 const handleProxyTypeChange = e => {
-  hasPlugin.value = false;
+  editForm.value.tls2raw = false;
   if (e === "http" || e === "https" || e === "tcp" || e === "udp") {
-    if (e === "https") {
-      hasPlugin.value = true;
-    }
     editForm.value.visitorsModel = "";
   } else {
     if (editForm.value.visitorsModel === "") {
@@ -1582,8 +1601,8 @@ onUnmounted(() => {
               </el-form-item>
             </el-col>
           </template>
-          <template v-if="hasPlugin">
-            <el-col v-if="hasPlugin" :span="24">
+          <template v-if="isHttps || isTcp">
+            <el-col :span="24">
               <div class="flex justify-between h3">
                 <div>{{ t("proxy.form.title.pluginConfig") }}</div>
               </div>
@@ -1591,22 +1610,21 @@ onUnmounted(() => {
             <template v-if="isHttps">
               <el-col :span="24">
                 <el-form-item
-                  label="https2http"
-                  prop="https2http"
+                  :label="t('proxy.form.formItem.pluginType.label')"
+                  prop="httpsPluginType"
                   label-position="left"
-                  :rules="[
-                    {
-                      required: true,
-                      trigger: 'blur'
-                    }
-                  ]"
                 >
-                  <el-switch
-                    v-model="editForm.https2http"
-                    :active-text="t('common.yes')"
-                    inline-prompt
-                    :inactive-text="t('common.no')"
-                  />
+                  <el-radio-group v-model="httpsPluginType">
+                    <el-radio :label="'none'" :value="'none'">{{
+                      t("proxy.form.pluginType.none")
+                    }}</el-radio>
+                    <el-radio :label="'https2http'" :value="'https2http'"
+                      >https2http</el-radio
+                    >
+                    <el-radio :label="'tls2raw'" :value="'tls2raw'"
+                      >tls2raw</el-radio
+                    >
+                  </el-radio-group>
                 </el-form-item>
               </el-col>
 
@@ -1684,6 +1702,141 @@ onUnmounted(() => {
                     class="ml-2"
                     type="danger"
                     @click="editForm.https2httpKeyFile = ''"
+                    >{{ t("common.clear") }}
+                  </el-button>
+                </el-form-item>
+              </el-col>
+              <template v-if="editForm.tls2raw">
+                <el-col :span="24">
+                  <el-form-item
+                    :label="t('proxy.form.formItem.tls2rawCaFile.label')"
+                    prop="tls2rawCaFile"
+                    label-width="180"
+                    :rules="[
+                      {
+                        required: true,
+                        message: t(
+                          'proxy.form.formItem.tls2rawCaFile.requireMessage'
+                        ),
+                        trigger: 'blur'
+                      }
+                    ]"
+                  >
+                    <el-input
+                      v-model="editForm.tls2rawCaFile"
+                      class="button-input"
+                      :placeholder="
+                        t('proxy.form.formItem.tls2rawCaFile.placeholder')
+                      "
+                      readonly
+                      @click="handleSelectFile(3, ['crt', 'pem'])"
+                    />
+                    <el-button
+                      v-if="editForm.tls2rawCaFile"
+                      class="ml-2"
+                      type="danger"
+                      @click="editForm.tls2rawCaFile = ''"
+                      >{{ t("common.clear") }}
+                    </el-button>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="24">
+                  <el-form-item
+                    :label="t('proxy.form.formItem.tls2rawKeyFile.label')"
+                    prop="tls2rawKeyFile"
+                    label-width="180"
+                    :rules="[
+                      {
+                        required: true,
+                        message: t(
+                          'proxy.form.formItem.tls2rawKeyFile.requireMessage'
+                        ),
+                        trigger: 'blur'
+                      }
+                    ]"
+                  >
+                    <el-input
+                      v-model="editForm.tls2rawKeyFile"
+                      class="cursor-pointer button-input"
+                      :placeholder="
+                        t('proxy.form.formItem.tls2rawKeyFile.placeholder')
+                      "
+                      readonly
+                      @click="handleSelectFile(4, ['key'])"
+                    />
+                    <el-button
+                      v-if="editForm.tls2rawKeyFile"
+                      class="ml-2"
+                      type="danger"
+                      @click="editForm.tls2rawKeyFile = ''"
+                      >{{ t("common.clear") }}
+                    </el-button>
+                  </el-form-item>
+                </el-col>
+              </template>
+            </template>
+          </template>
+          <template v-if="isTcp">
+            <el-col :span="24">
+              <el-form-item
+                label="tls2raw"
+                prop="tls2raw"
+                label-position="left"
+              >
+                <el-switch
+                  v-model="editForm.tls2raw"
+                  :active-text="t('common.yes')"
+                  inline-prompt
+                  :inactive-text="t('common.no')"
+                />
+              </el-form-item>
+            </el-col>
+
+            <template v-if="editForm.tls2raw">
+              <el-col :span="24">
+                <el-form-item
+                  :label="t('proxy.form.formItem.tls2rawCaFile.label')"
+                  prop="tls2rawCaFile"
+                  label-width="180"
+                >
+                  <el-input
+                    v-model="editForm.tls2rawCaFile"
+                    class="button-input"
+                    :placeholder="
+                      t('proxy.form.formItem.tls2rawCaFile.placeholder')
+                    "
+                    readonly
+                    @click="handleSelectFile(3, ['crt', 'pem'])"
+                  />
+                  <el-button
+                    v-if="editForm.tls2rawCaFile"
+                    class="ml-2"
+                    type="danger"
+                    @click="editForm.tls2rawCaFile = ''"
+                    >{{ t("common.clear") }}
+                  </el-button>
+                </el-form-item>
+              </el-col>
+              <el-col :span="24">
+                <el-form-item
+                  :label="t('proxy.form.formItem.tls2rawKeyFile.label')"
+                  prop="tls2rawKeyFile"
+                  label-width="180"
+                >
+                  <el-input
+                    v-model="editForm.tls2rawKeyFile"
+                    class="cursor-pointer button-input"
+                    :placeholder="
+                      t('proxy.form.formItem.tls2rawKeyFile.placeholder')
+                    "
+                    readonly
+                    @click="handleSelectFile(4, ['key'])"
+                  />
+                  <el-button
+                    v-if="editForm.tls2rawKeyFile"
+                    class="ml-2"
+                    type="danger"
+                    @click="editForm.tls2rawKeyFile = ''"
                     >{{ t("common.clear") }}
                   </el-button>
                 </el-form-item>
